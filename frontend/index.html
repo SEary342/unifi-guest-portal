@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>%VITE_PAGE_TITLE%</title>
+  <link href="/src/main.css" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="login-card">
+      <div class="logo">
+        <img src="/logo.png" alt="Wi-Fi Portal Logo" />
+        <h2>%VITE_PAGE_TITLE%</h2>
+      </div>
+
+      <form id="login-form">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            placeholder="Enter your Name"
+            required
+          />
+        </div>
+
+        <div class="input-group">
+          <label for="email">Email (Optional)</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        <button type="submit" class="submit-btn">Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
