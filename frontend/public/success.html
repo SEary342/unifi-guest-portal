@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Success</title>
+    <style>
+      /* Reset some default browser styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 600px;
+        width: 100%;
+      }
+
+      .login-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .logo h2 {
+        font-size: 2rem;
+        color: #4caf50;
+        margin-bottom: 1.5rem;
+      }
+
+      .success-message {
+        background-color: #e0f7e0;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        color: #2c6e2f;
+        margin-bottom: 2rem;
+      }
+
+      .success-message p {
+        font-size: 1.2rem;
+        margin: 0.5rem 0;
+      }
+
+      /* Mobile responsiveness */
+      @media (max-width: 600px) {
+        .login-card {
+          padding: 1rem;
+        }
+
+        .success-message p {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="login-card">
+        <div class="logo">
+          <h2>Success</h2>
+        </div>
+
+        <div class="success-message">
+          <p>You've successfully logged in to the guest Wi-Fi portal!</p>
+          <p>Welcome to the network!</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

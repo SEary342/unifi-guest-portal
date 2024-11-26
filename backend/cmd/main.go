@@ -10,8 +10,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,8 +25,9 @@ import (
 )
 
 type LoginCache struct {
-	ID string
-	AP string
+	ID        string
+	AP        string
+	Timestamp time.Time
 }
 
 var (
@@ -33,27 +37,28 @@ var (
 
 type LoginRequest struct {
 	CacheID string `json:"cacheId"`
-	Name    string `json:"name"`
+	Name    string `json:"username"`
 	Email   string `json:"email"`
 }
 
 func main() {
+	go purgeCacheEvery(30 * time.Second)
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	username := os.Getenv("UNIFI_USERNAME")
+	/*username := os.Getenv("UNIFI_USERNAME")
 	password := os.Getenv("UNIFI_PASSWORD")
 	url := os.Getenv("UNIFI_URL")
-	site := os.Getenv("UNIFI_SITE")
+	site := os.Getenv("UNIFI_SITE")*/
 	duration, err := strconv.Atoi(os.Getenv("UNIFI_DURATION"))
 	if err != nil {
 		log.Fatal("Error loading duration from env file")
 	}
-	disableTLS, err := strconv.ParseBool(os.Getenv("DISABLE_TLS"))
+	/*disableTLS, err := strconv.ParseBool(os.Getenv("DISABLE_TLS"))
 	if err != nil {
 		disableTLS = false
-	}
+	}*/
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/api/login", func(w http.ResponseWriter, r *http.Request) {
@@ -70,24 +75,80 @@ func main() {
 
 		if cacheId != "" {
 			cacheInfo := getRecord(cacheId)
-			authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
-			writeToDb(cacheInfo.ID, cacheInfo.AP, req.Name, req.Email, duration)
+			fmt.Println(req.Name)
+			fmt.Println(req.Email)
+			fmt.Println(cacheInfo.ID)
+			fmt.Println(cacheInfo.AP)
+			//authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
+			writeToDb(cacheId, cacheInfo.ID, cacheInfo.AP, req.Name, req.Email, duration)
 			removeFromCache(cacheId)
 		}
-		w.WriteHeader(http.StatusOK)
+		http.Redirect(w, r, "/success", http.StatusSeeOther)
+
+	})
+	r.Get("/success", func(w http.ResponseWriter, r *http.Request) {
+		serveFrontend(w, r, "")
 	})
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		var cacheId string
 		if r.URL.Query().Get("id") != "" {
 			id := r.URL.Query().Get("id")
 			ap := r.URL.Query().Get("ap")
-			cacheId := addToCache(id, ap)
-			w.Write([]byte(cacheId))
+			cacheId = addToCache(id, ap)
 		}
+		serveFrontend(w, r, cacheId)
 	})
-	http.ListenAndServe("0.0.0.0:3000", r)
+	appUrl := "0.0.0.0:3000"
+	fmt.Printf("Serving application on %s", appUrl)
+	http.ListenAndServe(appUrl, r)
 }
 
-func writeToDb(id string, ap string, name string, email string, duration int) {
+func serveFrontend(w http.ResponseWriter, r *http.Request, cacheId string) {
+	// Set the path to the build output of the front-end
+	frontendDir := "dist"
+
+	// Helper function to serve HTML pages
+	serveHTML := func(fileName string, w http.ResponseWriter, r *http.Request, cacheId string) {
+		// Read the HTML file
+		filePath := filepath.Join(frontendDir, fileName)
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Inject cacheId into the HTML content if provided
+		if cacheId != "" {
+			fileContent = []byte(strings.Replace(string(fileContent), "</body>", fmt.Sprintf(`<script>window.cacheId = "%s";</script></body>`, cacheId), 1))
+		}
+
+		// Serve the HTML file with the injected cacheId
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(fileContent)
+	}
+
+	// Handle serving the main entry point (index.html)
+	if r.URL.Path == "/" || r.URL.Path == "" {
+		serveHTML("index.html", w, r, cacheId)
+		return
+	}
+
+	// Handle the /success route
+	if r.URL.Path == "/success" {
+		serveHTML("success.html", w, r, cacheId)
+		return
+	}
+
+	// Serve other static assets like CSS, JS, images, etc.
+	filePath := filepath.Join(frontendDir, r.URL.Path)
+	if _, err := os.Stat(filePath); err == nil {
+		http.ServeFile(w, r, filePath)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func writeToDb(cacheId string, id string, ap string, name string, email string, duration int) {
 	// Open (or create) the SQLite database
 	db, err := sql.Open("sqlite3", "app.db")
 	if err != nil {
@@ -98,19 +159,24 @@ func writeToDb(id string, ap string, name string, email string, duration int) {
 	// Ensure the table exists
 	createTableQuery := `
 	CREATE TABLE IF NOT EXISTS user_sessions (
-		id TEXT PRIMARY KEY,
+	    cache_id TEXT PRIMARY KEY,
+		id TEXT,
 		ap TEXT,
 		name TEXT,
 		email TEXT,
-		duration INTEGER
+		duration INTEGER,
+		created_at TEXT
 	);`
 	if _, err := db.Exec(createTableQuery); err != nil {
 		log.Fatalf("Failed to create table: %v", err)
 	}
 
+	currentTime := time.Now().Format(time.RFC3339)
+
 	// Insert the data
-	insertQuery := `INSERT INTO user_sessions (id, ap, name, email, duration) VALUES (?, ?, ?, ?, ?)`
-	_, err = db.Exec(insertQuery, id, ap, name, email, duration)
+	insertQuery := `INSERT INTO user_sessions (cache_id, id, ap, name, email, duration, created_at) 
+					VALUES (?, ?, ?, ?, ?, ?, ?)`
+	_, err = db.Exec(insertQuery, cacheId, id, ap, name, email, duration, currentTime)
 	if err != nil {
 		log.Printf("Failed to insert data: %v", err)
 	} else {
@@ -123,7 +189,7 @@ func addToCache(id string, ap string) string {
 	defer mu.Unlock()
 
 	cacheID := uuid.New().String()
-	loginMap[cacheID] = LoginCache{ID: id, AP: ap}
+	loginMap[cacheID] = LoginCache{ID: id, AP: ap, Timestamp: time.Now()}
 	return cacheID
 }
 
@@ -146,6 +212,31 @@ func getRecord(cacheID string) *LoginCache {
 		return &entry
 	}
 	return nil
+}
+
+func purgeCacheEvery(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Use for range to handle the periodic ticker
+	for range ticker.C {
+		purgeCache()
+	}
+}
+
+// Purge cache entries older than a threshold (e.g., 1 hour)
+func purgeCache() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	threshold := time.Now().Add(-1 * time.Hour) // Purge entries older than 1 hour
+
+	for cacheID, entry := range loginMap {
+		if entry.Timestamp.Before(threshold) {
+			delete(loginMap, cacheID)
+			log.Printf("Purged cache entry: %s", cacheID)
+		}
+	}
 }
 
 func authorizeGuest(controllerURL, site, username, password, clientMAC string, apMAC string, duration int, disableTLS bool) error {
