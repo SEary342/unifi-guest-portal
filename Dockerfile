@@ -42,7 +42,7 @@ ENV UNIFI_USERNAME= \
     UNIFI_DURATION=480 \
     DISABLE_TLS=false \
     VITE_PAGE_TITLE="Guest Wi-Fi Portal" \
-    PORT=3030 \
+    PORT=3031 \
     DB_PATH="/data/db"
 
 # Copy SSL certificate

@@ -75,7 +75,10 @@ func main() {
 
 		if cacheId != "" {
 			cacheInfo := getRecord(cacheId)
-			authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
+			err := authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
+			if err != nil {
+				fmt.Println(err)
+			}
 			writeToDb(cacheId, cacheInfo.ID, cacheInfo.AP, req.Name, req.Email, duration)
 			removeFromCache(cacheId)
 		}
