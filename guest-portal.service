@@ -1,0 +1,10 @@
+[Unit]
+Description=UniFi Guest Portal Service
+After=network.target
+
+[Service]
+EnvironmentFile=/home/guest-portal/.env
+ExecStart=/usr/bin/podman run --rm -v /home/guest-portal/db:/data/db localhost/unifi-guest-portal:latest
+
+[Install]
+WantedBy=multi-user.target
