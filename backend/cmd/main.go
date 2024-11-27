@@ -85,15 +85,6 @@ func main() {
 	r.Get("/success", func(w http.ResponseWriter, r *http.Request) {
 		serveFrontend(w, r, "")
 	})
-	r.Get("/guest/s/default/", func(w http.ResponseWriter, r *http.Request) {
-		var cacheId string
-		if r.URL.Query().Get("id") != "" {
-			id := r.URL.Query().Get("id")
-			ap := r.URL.Query().Get("ap")
-			cacheId = addToCache(id, ap)
-		}
-		serveFrontend(w, r, cacheId)
-	})
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		var cacheId string
 		if r.URL.Query().Get("id") != "" {
@@ -143,7 +134,7 @@ func serveFrontend(w http.ResponseWriter, r *http.Request, cacheId string) {
 	}
 
 	// Handle serving the main entry point (index.html)
-	if r.URL.Path == "/" || r.URL.Path == "" {
+	if r.URL.Path == "/" || r.URL.Path == "" || r.URL.Path == "/guest/s/default/" {
 		serveHTML("index.html", w, r, cacheId)
 		return
 	}
