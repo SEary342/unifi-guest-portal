@@ -1,6 +1,8 @@
+APP_IMAGE=unifi-guest-portal:latest
+
 # Directories
 BACKEND_DIR := backend
-FRONTEND_DIR := frontend
+FRONTEND_DIR := frontendc
 DIST_DIR := dist
 
 # Backend variables
@@ -59,3 +61,7 @@ package: copy-env
 	# Copy frontend build output
 	cp -r $(FRONTEND_BUILD_DIR)/* $(DIST_DIR)/
 	@echo "Package ready in $(DIST_DIR)"
+
+build-container:
+	podman build --rm --force-rm -t $(APP_IMAGE) .
+	podman image prune -f

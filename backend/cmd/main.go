@@ -45,20 +45,20 @@ func main() {
 	go purgeCacheEvery(30 * time.Second)
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Warning: .env file not found. Continuing without it.")
 	}
-	/*username := os.Getenv("UNIFI_USERNAME")
+	username := os.Getenv("UNIFI_USERNAME")
 	password := os.Getenv("UNIFI_PASSWORD")
 	url := os.Getenv("UNIFI_URL")
-	site := os.Getenv("UNIFI_SITE")*/
+	site := os.Getenv("UNIFI_SITE")
 	duration, err := strconv.Atoi(os.Getenv("UNIFI_DURATION"))
 	if err != nil {
 		log.Fatal("Error loading duration from env file")
 	}
-	/*disableTLS, err := strconv.ParseBool(os.Getenv("DISABLE_TLS"))
+	disableTLS, err := strconv.ParseBool(os.Getenv("DISABLE_TLS"))
 	if err != nil {
 		disableTLS = false
-	}*/
+	}
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/api/login", func(w http.ResponseWriter, r *http.Request) {
@@ -75,11 +75,7 @@ func main() {
 
 		if cacheId != "" {
 			cacheInfo := getRecord(cacheId)
-			fmt.Println(req.Name)
-			fmt.Println(req.Email)
-			fmt.Println(cacheInfo.ID)
-			fmt.Println(cacheInfo.AP)
-			//authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
+			authorizeGuest(url, site, username, password, cacheInfo.ID, cacheInfo.AP, duration, disableTLS)
 			writeToDb(cacheId, cacheInfo.ID, cacheInfo.AP, req.Name, req.Email, duration)
 			removeFromCache(cacheId)
 		}
@@ -98,14 +94,18 @@ func main() {
 		}
 		serveFrontend(w, r, cacheId)
 	})
-	appUrl := "0.0.0.0:3000"
+	appUrl := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 	fmt.Printf("Serving application on %s", appUrl)
 	http.ListenAndServe(appUrl, r)
 }
 
 func serveFrontend(w http.ResponseWriter, r *http.Request, cacheId string) {
 	// Set the path to the build output of the front-end
-	frontendDir := "dist"
+	frontendDir := "./"
+	debugMode, _ := strconv.ParseBool(os.Getenv("DEBUG_MODE"))
+	if debugMode {
+		frontendDir = "dist"
+	}
 
 	// Helper function to serve HTML pages
 	serveHTML := func(fileName string, w http.ResponseWriter, r *http.Request, cacheId string) {
@@ -121,6 +121,12 @@ func serveFrontend(w http.ResponseWriter, r *http.Request, cacheId string) {
 		if cacheId != "" {
 			fileContent = []byte(strings.Replace(string(fileContent), "</body>", fmt.Sprintf(`<script>window.cacheId = "%s";</script></body>`, cacheId), 1))
 		}
+		appName := os.Getenv("VITE_PAGE_TITLE")
+		if appName == "" {
+			fmt.Println("Error getting the page title. Falling back to default.")
+			appName = "Guest Portal"
+		}
+		fileContent = []byte(strings.Replace(string(fileContent), "%VITE_PAGE_TITLE%", appName, -1))
 
 		// Serve the HTML file with the injected cacheId
 		w.Header().Set("Content-Type", "text/html")
@@ -150,7 +156,11 @@ func serveFrontend(w http.ResponseWriter, r *http.Request, cacheId string) {
 
 func writeToDb(cacheId string, id string, ap string, name string, email string, duration int) {
 	// Open (or create) the SQLite database
-	db, err := sql.Open("sqlite3", "app.db")
+	err := os.MkdirAll(os.Getenv("DB_PATH"), os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create directory: %v", err)
+	}
+	db, err := sql.Open("sqlite3", fmt.Sprintf("%s/unifi-guest-portal.db", os.Getenv("DB_PATH")))
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
