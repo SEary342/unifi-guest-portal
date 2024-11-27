@@ -1,5 +1,0 @@
-Readme
-Favicon
-containerization
-env vars and .env files
-full test
