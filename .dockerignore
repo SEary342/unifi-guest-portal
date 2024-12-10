@@ -1,6 +1,6 @@
 frontend/node_modules
 frontend/.env
-backend/cmd/.env
+backend/.env
 .env
 dist
 frontend/dist
