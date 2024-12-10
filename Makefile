@@ -2,7 +2,7 @@ APP_IMAGE=unifi-guest-portal:latest
 
 # Directories
 BACKEND_DIR := backend
-FRONTEND_DIR := frontendc
+FRONTEND_DIR := frontend
 DIST_DIR := dist
 
 # Backend variables
@@ -24,12 +24,12 @@ clean:
 	@echo "Cleaning up previous builds..."
 	rm -rf $(DIST_DIR)
 	rm -f $(BACKEND_DIR)/$(BACKEND_BINARY)
-	rm -rf ${BACKEND_DIR}/cmd/${DIST_DIR}
+	rm -rf ${BACKEND_DIR}/${DIST_DIR}
 
 # Build the Go backend
 build-backend:
 	@echo "Building Go backend..."
-	cd $(BACKEND_DIR) && $(GO) build -o $(BACKEND_BINARY) ./cmd/main.go
+	cd $(BACKEND_DIR) && $(GO) build -o $(BACKEND_BINARY) ./main.go
 
 # Build the Node.js frontend
 build-frontend:
@@ -49,8 +49,8 @@ copy-env:
 
 backend-debug: clean build-frontend
 	@echo "Prepping Front-End Debug for Backend"
-	mkdir -p $(BACKEND_DIR)/cmd/$(DIST_DIR)
-	cp -r $(FRONTEND_BUILD_DIR)/* $(BACKEND_DIR)/cmd/$(DIST_DIR)/
+	mkdir -p $(BACKEND_DIR)/$(DIST_DIR)
+	cp -r $(FRONTEND_BUILD_DIR)/* $(BACKEND_DIR)/$(DIST_DIR)/
 
 # Package everything into the dist directory
 package: copy-env
