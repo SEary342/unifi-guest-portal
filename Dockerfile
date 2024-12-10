@@ -4,10 +4,14 @@ FROM golang:1.23-bookworm AS builder
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy Go source code and other files to the container
+# Copy Go modules first to leverage Docker's caching mechanism
 COPY backend/go.mod backend/go.sum ./
-COPY backend/ ./
+
+# Download Go dependencies
 RUN go mod download
+
+# Now copy the entire backend directory
+COPY backend/ ./
 
 # Build the Go application
 RUN go build -o app ./main.go
