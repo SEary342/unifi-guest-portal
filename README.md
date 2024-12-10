@@ -12,6 +12,9 @@ The Unifi Guest Portal is a self-hosted web application designed for managing gu
 - **Cache Management**: Automatically manages cache to ensure optimal performance.
 - **Dockerized Deployment**: Easy to package and run in containerized environments.
 
+## Example
+<img src="example.png" alt="Example" width="500"/>
+
 ## Prerequisites
 
 - **Backend**: Requires [Go](https://golang.org/) 1.23.2 or later (earlier versions may work).
