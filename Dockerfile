@@ -6,11 +6,11 @@ WORKDIR /app
 
 # Copy Go source code and other files to the container
 COPY backend/go.mod backend/go.sum ./
-COPY backend/cmd ./cmd
+COPY backend/ ./
 RUN go mod download
 
 # Build the Go application
-RUN go build -o app ./cmd/main.go
+RUN go build -o app ./main.go
 
 # Stage 2: Serve the Vite-built files
 FROM node:22-bookworm AS vite-builder

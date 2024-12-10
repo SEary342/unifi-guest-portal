@@ -1,0 +1,23 @@
+[Container]
+Image=localhost/unifi-guest-portal:latest
+Pull=never
+PublishPort=3031:3031/tcp
+UserNS=keep-id
+Volume=/home/guest-portal/db:/data/db:Z
+Environment="UNIFI_USERNAME=portalService"
+Environment="UNIFI_PASSWORD=<password>"
+Environment="UNIFI_URL=https://192.168.1.1"
+Environment="UNIFI_SITE=default"
+Environment="UNIFI_DURATION=480"
+Environment="DISABLE_TLS=true"
+Environment="VITE_PAGE_TITLE=Guest Wi-Fi Portal"
+Environment="PORT=3031"
+Environment="DB_PATH=/data/db"
+
+[Service]
+# Inform systemd of additional exit status
+SuccessExitStatus=0 143
+
+[Install]
+# Start by default on boot
+WantedBy=default.target
